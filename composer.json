@@ -1,0 +1,23 @@
+{
+    "name": "infomaniac/spore",
+    "description": "Annotated routing and utilities for Laravel",
+    "authors": [
+        {
+            "name": "infomaniac/spore",
+            "email": "dannykopping@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.0.x"
+    },
+    "autoload": {
+        "classmap": [
+            "src/migrations"
+        ],
+        "psr-0": {
+            "Infomaniac\\Spore": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
