@@ -3,7 +3,7 @@
     "description": "Annotated routing and utilities for Laravel",
     "authors": [
         {
-            "name": "infomaniac/spore",
+            "name": "infomaniac/spore-package",
             "email": "dannykopping@gmail.com"
         }
     ],
