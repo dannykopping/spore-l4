@@ -1,6 +1,7 @@
 {
     "name": "infomaniac/spore",
     "description": "Annotated routing and utilities for Laravel",
+    "keywords": ["laravel", "spore", "annotations", "annotated", "routing"],
     "authors": [
         {
             "name": "Danny Kopping",

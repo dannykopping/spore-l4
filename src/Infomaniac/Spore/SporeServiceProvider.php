@@ -24,6 +24,13 @@ class SporeServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->package('infomaniac/spore');
+
+        // replace Laravel's native Router
+        $this->app['router'] = $this->app->share(
+            function () {
+                return new Router();
+            }
+        );
     }
 
     /**
@@ -33,25 +40,25 @@ class SporeServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $classLoader = $this->getComposerClassLoader();
+        $classLoader                    = $this->getComposerClassLoader();
         $this->app['composer.autoload'] = $this->app->share(
             function () use ($classLoader) {
                 return $classLoader;
             }
         );
-
-        $this->app['router'] = $this->app->share(
-            function () {
-                return new Router();
-            }
-        );
     }
 
+    /**
+     * Get the Composer ClassLoader for use with namespace searching
+     *
+     * @return mixed|null
+     */
     private function getComposerClassLoader()
     {
-        $base             = App::make('path.base');
-        if(!file_exists($base) || !file_exists("$base/vendor/autoload.php"))
-            throw new Exception('Could not load Composer\'s ClassLoader - this is required for Spore to work');
+        $base = App::make('path.base');
+        if (!file_exists($base) || !file_exists("$base/vendor/autoload.php")) {
+            return null;
+        }
 
         $classLoader = require "$base/vendor/autoload.php";
         return $classLoader;
@@ -64,7 +71,7 @@ class SporeServiceProvider extends ServiceProvider
      */
     public function provides()
     {
-        return array();
+        return array('composer.autoload', 'router');
     }
 
 }
