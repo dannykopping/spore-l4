@@ -72,7 +72,7 @@ class Router extends BaseRouter
         }
 
         // check for view options
-        $view = $this->getTemplate($definition, $request, $response->getOriginalContent());
+        $view = $this->getTemplate($definition, $request, $response);
         if ($view) {
             $response->setContent($view);
         }
@@ -252,25 +252,27 @@ class Router extends BaseRouter
     private function getTemplate(
         AnnotatedDefinition $definition,
         \Symfony\Component\HttpFoundation\Request $request,
-        $data
+        \Illuminate\Http\Response $response
     ) {
         if (!$definition) {
             return null;
         }
 
+        $data = $response->getOriginalContent();
+
         $template = RouteParser::getAnnotationValue(RouteParser::TEMPLATE, $definition);
-        if (!$template) {
-            return null;
+        if ($template) {
+            $renderMode = RouteParser::getAnnotationValue(RouteParser::RENDER, $definition);
+            $isAjax     = $request->isXmlHttpRequest();
+
+            // if browser request or set to always render
+            if (($renderMode == 'browser' && !$isAjax) || $renderMode == 'always') {
+                $response->headers->set('Content-Type', 'text/html; charset=UTF-8');
+                return View::make($template)->with('data', $data);
+            }
         }
 
-        $renderMode = RouteParser::getAnnotationValue(RouteParser::RENDER, $definition);
-        $isAjax     = $request->isXmlHttpRequest();
-
-        // if browser request or set to always render
-        if (($renderMode == 'browser' && !$isAjax) || $renderMode == 'always') {
-            return View::make($template)->with('data', $data);
-        }
-
-        return $data;
+        $response->headers->set('Content-Type', 'application/json; charset=UTF-8');
+        return json_encode($data);
     }
 }
