@@ -113,7 +113,8 @@ class AnnotatedRouteTest extends TestCase
     public function testNamedRoute()
     {
         $this->call('GET', '/named-route');
-        $this->assertEquals($this->getRequest()->getUri(), URL::route('named'));
+        $this->assertEquals('named', Route::currentRouteName());
+        $this->assertEquals($this->getRequest()->getUri(), URL::route(Route::currentRouteName()));
     }
 
     private function getRequest()
