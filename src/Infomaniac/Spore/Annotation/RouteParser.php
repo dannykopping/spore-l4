@@ -153,6 +153,12 @@ class RouteParser
             case self::NAME:
                 $callback = 'getRouteAlias';
                 break;
+            case self::TEMPLATE:
+                $callback = 'getTemplate';
+                break;
+            case self::RENDER:
+                $callback = 'getRenderMode';
+                break;
             default:
                 throw new \Exception('No handler for annotation type "' . $type . '"');
                 break;
@@ -214,6 +220,30 @@ class RouteParser
         }
 
         return $value->getValue();
+    }
+
+    private static function getTemplate(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        return $value->getValue();
+    }
+
+    private static function getRenderMode(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        $renderMode = $value->getValue();
+        $acceptable = array('always', 'browser', 'never');
+        if (!in_array(strtolower($renderMode), $acceptable)) {
+            throw new \Exception('Unacceptable value for @render option "' . $renderMode . '"');
+        }
+
+        return $renderMode;
     }
 
     public static function getAnnotationIdentifier($type)

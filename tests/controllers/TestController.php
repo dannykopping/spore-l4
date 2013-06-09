@@ -68,4 +68,46 @@ class TestController
     {
         return URL::to('named');
     }
+
+    /**
+     * @uri                 /view-browser/{title}
+     * @verbs               GET
+     * @template            spore::test
+     * @render              browser
+     */
+    public function getBrowserRenderView($title = null)
+    {
+        return $this->pageData($title);
+    }
+
+    /**
+     * @uri                 /view-always/{title}
+     * @verbs               GET
+     * @template            spore::test
+     * @render              always
+     */
+    public function getAlwaysRenderView($title = null)
+    {
+        return $this->pageData($title);
+    }
+
+    /**
+     * @uri                 /view-never/{title}
+     * @verbs               GET
+     * @template            spore::test
+     * @render              never
+     */
+    public function getNeverRenderView($title = null)
+    {
+        return $this->pageData($title);
+    }
+
+    private function pageData($title = null)
+    {
+        return array(
+            'page' => array(
+                'title' => $title
+            )
+        );
+    }
 }

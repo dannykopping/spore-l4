@@ -1,6 +1,8 @@
 <?php
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 require_once __DIR__ . '/controllers/TestController.php';
@@ -20,7 +22,6 @@ class AnnotatedRouteTest extends TestCase
         $router->addController(new BaseURIController());
         $router->addController(new BaseURIWithParamController());
     }
-
 
     public function testRouterReplacement()
     {
@@ -115,6 +116,29 @@ class AnnotatedRouteTest extends TestCase
         $this->call('GET', '/named-route');
         $this->assertEquals('named', Route::currentRouteName());
         $this->assertEquals($this->getRequest()->getUri(), URL::route(Route::currentRouteName()));
+    }
+
+    public function testGetViewRenderIfBrowser()
+    {
+        $response = $this->call('GET', '/view-browser/Laravel');
+        $this->assertEquals('<h1>Laravel</h1>', $response->getContent());
+    }
+
+    public function testGetViewRenderAlways()
+    {
+        $response = $this->call('GET', '/view-always/Laravel');
+        $this->assertEquals('<h1>Laravel</h1>', $response->getContent());
+    }
+
+    public function testGetViewRenderNever()
+    {
+        $response = $this->call('GET', '/view-never/Laravel');
+        $this->assertEquals(json_encode(array(
+            'page' => array(
+                'title' => 'Laravel'
+            ))),
+            $response->getContent()
+        );
     }
 
     private function getRequest()

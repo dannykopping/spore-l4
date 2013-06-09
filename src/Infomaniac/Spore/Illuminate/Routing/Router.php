@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\Router as BaseRouter;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\View;
 use Infomaniac\Spore\Annotation\AnnotatedDefinition;
 use Infomaniac\Spore\Annotation\RouteParser;
 use Infomaniac\Spore\Exception\SecurityException;
@@ -44,6 +45,7 @@ class Router extends BaseRouter
 
         // define before & after filters for pre- and post-processing
         $this->filter('beforeAnnotatedRoute', array($this, 'beforeFilter'));
+        $this->filter('afterAnnotatedRoute', array($this, 'afterFilter'));
 
         return $router;
     }
@@ -59,6 +61,20 @@ class Router extends BaseRouter
         $allowed = $this->isOnlyHttpsAllowed($definition, $request);
         if (!$allowed) {
             throw new SecurityException(SecurityException::HTTPS_ONLY);
+        }
+    }
+
+    public function afterFilter(Route $route, \Illuminate\Http\Request $request, \Illuminate\Http\Response $response)
+    {
+        $definition = $this->getDefinitionForRoute($route);
+        if (!$definition) {
+            return null;
+        }
+
+        // check for view options
+        $view = $this->getTemplate($definition, $request, $response->getOriginalContent());
+        if ($view) {
+            $response->setContent($view);
         }
     }
 
@@ -226,9 +242,35 @@ class Router extends BaseRouter
         }
 
         $secure = RouteParser::getAnnotationValue(RouteParser::SECURE, $definition);
-        if(!$secure)
+        if (!$secure) {
             return true;
+        }
 
         return $secure && $request->isSecure();
+    }
+
+    private function getTemplate(
+        AnnotatedDefinition $definition,
+        \Symfony\Component\HttpFoundation\Request $request,
+        $data
+    ) {
+        if (!$definition) {
+            return null;
+        }
+
+        $template = RouteParser::getAnnotationValue(RouteParser::TEMPLATE, $definition);
+        if (!$template) {
+            return null;
+        }
+
+        $renderMode = RouteParser::getAnnotationValue(RouteParser::RENDER, $definition);
+        $isAjax     = $request->isXmlHttpRequest();
+
+        // if browser request or set to always render
+        if (($renderMode == 'browser' && !$isAjax) || $renderMode == 'always') {
+            return View::make($template)->with('data', $data);
+        }
+
+        return $data;
     }
 }
