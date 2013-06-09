@@ -24,8 +24,14 @@ return array(
         'render'   => 'render',
         /**
          * Whether to force HTTPS-only access
+         * @link    http://laravel.com/docs/routing#basic-routing
          */
         'secure'   => 'secure',
+        /**
+         * Route alias
+         * @link    http://laravel.com/docs/routing#named-routes
+         */
+        'name'   => 'name',
     ),
     /**
      * public, private and protected methods can be addressed

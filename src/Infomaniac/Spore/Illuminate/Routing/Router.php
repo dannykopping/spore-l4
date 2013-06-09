@@ -192,7 +192,7 @@ class Router extends BaseRouter
         return $filters;
     }
 
-    private function addDefinitionMapping(Route $route, AnnotatedDefinition $definition)
+    private function addDefinitionMapping(Route $route, AnnotatedDefinition $definition = null)
     {
         if (!$this->definitionMap) {
             $this->definitionMap = array();

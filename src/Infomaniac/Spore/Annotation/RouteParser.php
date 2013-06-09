@@ -31,6 +31,7 @@ class RouteParser
     const TEMPLATE = 'template';
     const RENDER   = 'render';
     const SECURE   = 'secure';
+    const NAME     = 'name';
 
     const ALL_VERBS = 'get|post|put|patch|delete';
 
@@ -41,6 +42,7 @@ class RouteParser
         self::TEMPLATE => 'template',
         self::RENDER   => 'render',
         self::SECURE   => 'secure',
+        self::NAME     => 'name',
     );
 
     /**
@@ -100,6 +102,7 @@ class RouteParser
         }
 
         $verbs = self::getAnnotationValue(self::VERBS, $definition);
+        $name  = self::getAnnotationValue(self::NAME, $definition);
 
         // create a new instance of the class if one does not exist already
         $class    = $definition->getClass();
@@ -112,6 +115,7 @@ class RouteParser
             array(
                 'before' => 'beforeAnnotatedRoute',
                 'after'  => 'afterAnnotatedRoute',
+                'as'     => $name,
                 $method->getReflectionObject()->getClosure($instance)
             ),
             $definition
@@ -145,6 +149,9 @@ class RouteParser
                 break;
             case self::SECURE:
                 $callback = 'getSecure';
+                break;
+            case self::NAME:
+                $callback = 'getRouteAlias';
                 break;
             default:
                 throw new \Exception('No handler for annotation type "' . $type . '"');
@@ -198,6 +205,15 @@ class RouteParser
         }
 
         return true;
+    }
+
+    private static function getRouteAlias(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        return $value->getValue();
     }
 
     public static function getAnnotationIdentifier($type)

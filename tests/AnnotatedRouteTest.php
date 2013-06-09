@@ -66,7 +66,7 @@ class AnnotatedRouteTest extends TestCase
         $exception = null;
         try {
             $this->call('CUSTOM', '/any-verb');
-        } catch(MethodNotAllowedHttpException $e) {
+        } catch (MethodNotAllowedHttpException $e) {
             $exception = $e;
         }
 
@@ -108,6 +108,12 @@ class AnnotatedRouteTest extends TestCase
     {
         $response = $this->call('GET', '/base-uri/basey/hello');
         $this->assertEquals('base basey world', $response->getContent());
+    }
+
+    public function testNamedRoute()
+    {
+        $this->call('GET', '/named-route');
+        $this->assertEquals($this->getRequest()->getUri(), URL::route('named'));
     }
 
     private function getRequest()

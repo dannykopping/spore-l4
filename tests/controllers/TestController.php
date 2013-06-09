@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\URL;
 
 class TestController
 {
@@ -54,5 +55,17 @@ class TestController
     public function customVerb()
     {
         return null;
+    }
+
+    /**
+     * @uri             /named-route
+     * @name            named
+     * @verbs           GET
+     *
+     * @return string
+     */
+    public function namedRoute()
+    {
+        return URL::to('named');
     }
 }
