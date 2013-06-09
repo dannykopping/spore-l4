@@ -10,7 +10,7 @@
     ],
     "require": {
         "php": ">=5.3.0",
-        "illuminate/support": "4.0.x",
+        "illuminate/support": "v4.0.4",
         "dannykopping/docblock": "dev-master"
     },
     "autoload": {
