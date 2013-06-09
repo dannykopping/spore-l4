@@ -4,12 +4,15 @@ namespace Infomaniac\Spore\Illuminate\Routing;
 use DocBlock\Parser;
 use Exception;
 use Illuminate\Container\Container;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Routing\Router as BaseRouter;
 use Illuminate\Support\Facades\Config;
+use Infomaniac\Spore\Annotation\AnnotatedDefinition;
 use Infomaniac\Spore\Annotation\RouteParser;
+use Infomaniac\Spore\Exception\SecurityException;
 use ReflectionClass;
 use ReflectionMethod;
-use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Class Router
@@ -25,18 +28,52 @@ class Router extends BaseRouter
      */
     private $parser;
 
+    /**
+     * Mappings between Route and AnnotatedDefinition
+     *
+     * @var array
+     */
+    private $definitionMap;
+
     public function __construct(Container $container = null)
     {
-        $this->parser = new Parser();
+        $this->parser        = new Parser();
+        $this->definitionMap = array();
 
-        return parent::__construct($container);
+        $router = parent::__construct($container);
+
+        // define before & after filters for pre- and post-processing
+        $this->filter('beforeAnnotatedRoute', array($this, 'beforeFilter'));
+
+        return $router;
+    }
+
+    public function beforeFilter(Route $route, \Illuminate\Http\Request $request)
+    {
+        $definition = $this->getDefinitionForRoute($route);
+        if (!$definition) {
+            return null;
+        }
+
+        // check for HTTPS-only requirements (with @secure annotation)
+        $allowed = $this->isOnlyHttpsAllowed($definition, $request);
+        if (!$allowed) {
+            throw new SecurityException(SecurityException::HTTPS_ONLY);
+        }
+    }
+
+    protected function createRoute($method, $pattern, $action, AnnotatedDefinition $definition = null)
+    {
+        $route = parent::createRoute($method, $pattern, $action);
+        $this->addDefinitionMapping($route, $definition);
     }
 
     /**
-     * @param Request $request
-     * @return \Illuminate\Routing\Route
+     * @param \Symfony\Component\HttpFoundation\Request $request
+     *
+     * @return Route
      */
-    protected function findRoute(Request $request)
+    protected function findRoute(\Symfony\Component\HttpFoundation\Request $request)
     {
         $this->addAnnotatedRoutesToStack();
 
@@ -45,6 +82,7 @@ class Router extends BaseRouter
 
     /**
      * @param $instance
+     *
      * @return void
      */
     public function addController($instance)
@@ -102,10 +140,10 @@ class Router extends BaseRouter
         }
 
         foreach ($routes as $route) {
-            list($method, $pattern, $action) = $route;
+            list($method, $pattern, $action, $definition) = $route;
 
             // create the native route
-            $this->createRoute($method, $pattern, $action);
+            $this->createRoute($method, $pattern, $action, $definition);
         }
     }
 
@@ -152,5 +190,45 @@ class Router extends BaseRouter
         }
 
         return $filters;
+    }
+
+    private function addDefinitionMapping(Route $route, AnnotatedDefinition $definition)
+    {
+        if (!$this->definitionMap) {
+            $this->definitionMap = array();
+        }
+
+        if (!$route || !$definition) {
+            return null;
+        }
+
+        $this->definitionMap[spl_object_hash($route)] = $definition;
+    }
+
+    private function getDefinitionForRoute(Route $route)
+    {
+        if (!$route) {
+            return null;
+        }
+
+        $index = spl_object_hash($route);
+        return isset($this->definitionMap[$index]) ? $this->definitionMap[$index] : null;
+    }
+
+    private function isOnlyHttpsAllowed(
+        AnnotatedDefinition $definition,
+        \Symfony\Component\HttpFoundation\Request $request
+    ) {
+        // if no definition is passed, stay on the safe side and prevent access
+        // as this may have been an internal bug and it shouldn't compromise security
+        if (!$definition) {
+            return false;
+        }
+
+        $secure = RouteParser::getAnnotationValue(RouteParser::SECURE, $definition);
+        if(!$secure)
+            return true;
+
+        return $secure && $request->isSecure();
     }
 }

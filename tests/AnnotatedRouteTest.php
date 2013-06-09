@@ -1,7 +1,11 @@
 <?php
-require_once __DIR__.'/controllers/TestController.php';
-
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+
+require_once __DIR__ . '/controllers/TestController.php';
+require_once __DIR__ . '/controllers/SecureController.php';
+require_once __DIR__ . '/controllers/BaseURIController.php';
 
 class AnnotatedRouteTest extends TestCase
 {
@@ -12,6 +16,9 @@ class AnnotatedRouteTest extends TestCase
         // add test controller to routing stack
         $router = App::make('router');
         $router->addController(new TestController());
+        $router->addController(new SecureController());
+        $router->addController(new BaseURIController());
+        $router->addController(new BaseURIWithParamController());
     }
 
 
@@ -34,7 +41,7 @@ class AnnotatedRouteTest extends TestCase
         $this->assertEquals(403, $response->getStatusCode());
     }
 
-    public function testCallSimpleRoute()
+    public function testSimpleRoute()
     {
         $response = $this->call('GET', '/hello');
         $this->assertEquals("world", $response->getContent());
@@ -44,9 +51,71 @@ class AnnotatedRouteTest extends TestCase
     /**
      * @expectedException       Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException
      */
-    public function testCallSimpleRouteWithIncorrectVerb()
+    public function testSimpleRouteWithIncorrectVerb()
     {
         $this->call('POST', '/hello');
     }
 
+    public function testRouteWithNoDefinedVerbs()
+    {
+        // these will not throw an exception because any HTTP verb will be accepted
+        $this->call('GET', '/any-verb');
+        $this->call('POST', '/any-verb');
+
+        // however, non-standard HTTP verbs will be rejected
+        $exception = null;
+        try {
+            $this->call('CUSTOM', '/any-verb');
+        } catch(MethodNotAllowedHttpException $e) {
+            $exception = $e;
+        }
+
+        $this->assertNotNull($exception);
+    }
+
+    public function testRouteWithCustomVerb()
+    {
+        $this->call('MY-FANCY-VERB', '/custom-verb');
+    }
+
+    public function testRouteWithParams()
+    {
+        $response = $this->call('GET', '/hello/danny');
+        $this->assertEquals('danny', $response->getContent());
+    }
+
+    /**
+     * @expectedException           \Infomaniac\Spore\Exception\SecurityException
+     * @expectedExceptionMessage    Route is only accessible via HTTPS
+     */
+    public function testSecureRouteWithInsecureCall()
+    {
+        $this->call('GET', '/secure/hello');
+    }
+
+    public function testSecureRouteWithSecureCall()
+    {
+        $this->assertNotNull($this->callSecure('GET', '/secure/hello'));
+    }
+
+    public function testBaseURI()
+    {
+        $response = $this->call('GET', '/base-uri/hello');
+        $this->assertEquals('base world', $response->getContent());
+    }
+
+    public function testBaseURIWithParam()
+    {
+        $response = $this->call('GET', '/base-uri/basey/hello');
+        $this->assertEquals('base basey world', $response->getContent());
+    }
+
+    private function getRequest()
+    {
+        if (!$this->client) {
+            return null;
+        }
+
+        return $this->client->getRequest();
+    }
 }

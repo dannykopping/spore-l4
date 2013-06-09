@@ -22,6 +22,10 @@ return array(
          * Whether to render the defined template
          */
         'render'   => 'render',
+        /**
+         * Whether to force HTTPS-only access
+         */
+        'secure'   => 'secure',
     ),
     /**
      * public, private and protected methods can be addressed

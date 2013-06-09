@@ -1,6 +1,7 @@
 <?php
 namespace Infomaniac\Spore\Annotation;
 
+use DocBlock\Element\AnnotationElement;
 use DocBlock\Element\MethodElement;
 use DocBlock\Parser;
 use Illuminate\Support\Facades\Config;
@@ -29,6 +30,7 @@ class RouteParser
     const BASE     = 'base';
     const TEMPLATE = 'template';
     const RENDER   = 'render';
+    const SECURE   = 'secure';
 
     const ALL_VERBS = 'get|post|put|patch|delete';
 
@@ -38,12 +40,14 @@ class RouteParser
         self::BASE     => 'base',
         self::TEMPLATE => 'template',
         self::RENDER   => 'render',
+        self::SECURE   => 'secure',
     );
 
     /**
      * Create native Laravel routes from parsed controllers' annotations
      *
      * @param Router $router
+     *
      * @return array|null
      */
     public static function createRoutesData(Router $router)
@@ -83,28 +87,19 @@ class RouteParser
 
     /**
      * @param MethodElement $method
+     *
      * @return array
      */
     private static function addAnnotatedRouteByMethod(MethodElement $method)
     {
         $definition = new AnnotatedDefinition($method);
 
-        // if the definition has no local URI, ignore it
-        if (!$definition->getLocalPath()) {
+        $uri = self::getAnnotationValue(self::URI, $definition);
+        if (!$uri) {
             return null;
         }
 
-        $fullPath        = $definition->getFullPath();
-        $verbs           = null;
-        $verbsAnnotation = $method->getAnnotation(self::getAnnotationIdentifier(self::VERBS));
-        if ($verbsAnnotation) {
-            $verbs = $verbsAnnotation->getValue();
-            if (empty($verbs)) {
-                $verbs = self::ALL_VERBS;
-            } else {
-                $verbs = strtolower(implode('|', explode(',', $verbs)));
-            }
-        }
+        $verbs = self::getAnnotationValue(self::VERBS, $definition);
 
         // create a new instance of the class if one does not exist already
         $class    = $definition->getClass();
@@ -113,13 +108,96 @@ class RouteParser
 
         return array(
             $verbs,
-            $fullPath,
+            $uri,
             array(
-                'after'      => 'bob',
-                'definition' => $definition,
+                'before' => 'beforeAnnotatedRoute',
+                'after'  => 'afterAnnotatedRoute',
                 $method->getReflectionObject()->getClosure($instance)
-            )
+            ),
+            $definition
         );
+    }
+
+    public static function getAnnotationValue($type, AnnotatedDefinition $definition, $inherit = true)
+    {
+        $identifier  = self::getAnnotationIdentifier($type);
+        $classValue  = $definition->getClass()->getAnnotation($identifier);
+        $methodValue = $definition->getMethod()->getAnnotation($identifier);
+        $value       = null;
+
+        if ($inherit && $classValue && !$methodValue) {
+            // if inherit is true,
+            // a class-level annotation exists and no method annotation was defined,
+            // use the class-level value
+            $value = $classValue;
+        } else {
+            // otherwise, use the value localized to the requested route callback method
+            $value = $methodValue;
+        }
+
+        $callback = '';
+        switch ($type) {
+            case self::URI:
+                $callback = 'getRouteURI';
+                break;
+            case self::VERBS:
+                $callback = 'getVerbs';
+                break;
+            case self::SECURE:
+                $callback = 'getSecure';
+                break;
+            default:
+                throw new \Exception('No handler for annotation type "' . $type . '"');
+                break;
+        }
+
+        if (!method_exists(__CLASS__, $callback)) {
+            return null;
+        }
+
+        return call_user_func_array(
+            __CLASS__ . '::' . $callback,
+            array($definition, $value)
+        );
+    }
+
+    private static function getRouteURI(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        // if the definition has no local URI, ignore it
+        if (!$definition->getLocalPath()) {
+            return null;
+        }
+
+        $fullPath = $definition->getFullPath();
+        return $fullPath;
+    }
+
+    private static function getVerbs(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        if ($value) {
+            $verbs = $value->getValue();
+            if (empty($verbs) || strtolower($verbs) == 'any') {
+                $verbs = self::ALL_VERBS;
+            } else {
+                $verbs = strtolower(implode('|', explode(',', $verbs)));
+            }
+        } else {
+            $verbs = self::ALL_VERBS;
+        }
+
+        return $verbs;
+    }
+
+    private static function getSecure(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        // if a "@secure" annotation exists, assume it to be true
+        // its absense will be construed as false
+
+        if (!$value) {
+            return false;
+        }
+
+        return true;
     }
 
     public static function getAnnotationIdentifier($type)

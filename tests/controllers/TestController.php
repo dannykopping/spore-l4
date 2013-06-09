@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Response;
+
 class TestController
 {
     /**
@@ -22,5 +24,35 @@ class TestController
     public function unauthorized()
     {
         return Response::make(null, 403);
+    }
+
+    /**
+     * @uri             /hello/{name}
+     * @verbs           GET
+     *
+     * @param $name
+     *
+     * @return string
+     */
+    public function helloWithParams($name)
+    {
+        return $name;
+    }
+
+    /**
+     * @uri             /any-verb
+     */
+    public function anyVerb()
+    {
+        return null;
+    }
+
+    /**
+     * @uri             /custom-verb
+     * @verbs           MY-FANCY-VERB
+     */
+    public function customVerb()
+    {
+        return null;
     }
 }
