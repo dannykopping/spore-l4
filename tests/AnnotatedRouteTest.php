@@ -45,7 +45,7 @@ class AnnotatedRouteTest extends TestCase
     public function testSimpleRoute()
     {
         $response = $this->call('GET', '/hello');
-        $this->assertEquals("world", $response->getContent());
+        $this->assertEquals('"world"', $response->getContent());
         $this->assertEquals(200, $response->getStatusCode());
     }
 
@@ -82,7 +82,7 @@ class AnnotatedRouteTest extends TestCase
     public function testRouteWithParams()
     {
         $response = $this->call('GET', '/hello/danny');
-        $this->assertEquals('danny', $response->getContent());
+        $this->assertEquals('"danny"', $response->getContent());
     }
 
     /**
@@ -102,13 +102,13 @@ class AnnotatedRouteTest extends TestCase
     public function testBaseURI()
     {
         $response = $this->call('GET', '/base-uri/hello');
-        $this->assertEquals('base world', $response->getContent());
+        $this->assertEquals('"base world"', $response->getContent());
     }
 
     public function testBaseURIWithParam()
     {
         $response = $this->call('GET', '/base-uri/basey/hello');
-        $this->assertEquals('base basey world', $response->getContent());
+        $this->assertEquals('"base basey world"', $response->getContent());
     }
 
     public function testNamedRoute()
