@@ -32,6 +32,7 @@ class RouteParser
     const RENDER   = 'render';
     const SECURE   = 'secure';
     const NAME     = 'name';
+    const JSON     = 'json';
 
     const ALL_VERBS = 'get|post|put|patch|delete';
 
@@ -43,6 +44,7 @@ class RouteParser
         self::RENDER   => 'render',
         self::SECURE   => 'secure',
         self::NAME     => 'name',
+        self::JSON     => 'json',
     );
 
     /**
@@ -159,6 +161,9 @@ class RouteParser
             case self::RENDER:
                 $callback = 'getRenderMode';
                 break;
+            case self::JSON:
+                $callback = 'getRenderJSON';
+                break;
             default:
                 throw new \Exception('No handler for annotation type "' . $type . '"');
                 break;
@@ -244,6 +249,15 @@ class RouteParser
         }
 
         return $renderMode;
+    }
+
+    private static function getRenderJSON(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        return (bool) $value->getValue() === false;
     }
 
     public static function getAnnotationIdentifier($type)

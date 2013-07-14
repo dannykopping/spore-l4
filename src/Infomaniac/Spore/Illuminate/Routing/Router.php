@@ -260,7 +260,9 @@ class Router extends BaseRouter
 
         $data = $response->getOriginalContent();
 
-        $template = RouteParser::getAnnotationValue(RouteParser::TEMPLATE, $definition);
+        $template   = RouteParser::getAnnotationValue(RouteParser::TEMPLATE, $definition);
+        $returnJSON = RouteParser::getAnnotationValue(RouteParser::JSON, $definition);
+
         if ($template) {
             $renderMode = RouteParser::getAnnotationValue(RouteParser::RENDER, $definition);
             $isAjax     = $request->isXmlHttpRequest();
@@ -272,7 +274,9 @@ class Router extends BaseRouter
             }
         }
 
-        $response->headers->set('Content-Type', 'application/json; charset=UTF-8');
-        return json_encode($data);
+        if ($returnJSON !== false) {
+            $response->headers->set('Content-Type', 'application/json; charset=UTF-8');
+            return json_encode($data);
+        }
     }
 }
