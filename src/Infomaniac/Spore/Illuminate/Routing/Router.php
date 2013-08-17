@@ -57,6 +57,22 @@ class Router extends BaseRouter
             return null;
         }
 
+        /**
+         * Check authorization roles
+         * If accessControl filter does not exist, ignore authorization check
+         */
+        $accessControlFilter = $this->getFilter('accessControl');
+        if (!empty($accessControlFilter)) {
+            $roles = RouteParser::getAnnotationValue(RouteParser::AUTH, $definition);
+            if (count($roles)) {
+                $authorized = call_user_func_array($accessControlFilter, [$roles]);
+
+                if (!$authorized) {
+                    throw new SecurityException(SecurityException::AUTHENTICATION_FAILURE);
+                }
+            }
+        }
+
         // check for HTTPS-only requirements (with @secure annotation)
         $allowed = $this->isOnlyHttpsAllowed($definition, $request);
         if (!$allowed) {

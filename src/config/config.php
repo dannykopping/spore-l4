@@ -32,6 +32,10 @@ return array(
          * @link    http://laravel.com/docs/routing#named-routes
          */
         'name'   => 'name',
+        /**
+         * Route access roles
+         */
+        'auth'   => 'auth',
     ),
     /**
      * public, private and protected methods can be addressed

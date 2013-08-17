@@ -33,6 +33,7 @@ class RouteParser
     const SECURE   = 'secure';
     const NAME     = 'name';
     const JSON     = 'json';
+    const AUTH     = 'auth';
 
     const ALL_VERBS = 'get|post|put|patch|delete';
 
@@ -45,6 +46,7 @@ class RouteParser
         self::SECURE   => 'secure',
         self::NAME     => 'name',
         self::JSON     => 'json',
+        self::AUTH     => 'auth',
     );
 
     /**
@@ -164,6 +166,9 @@ class RouteParser
             case self::JSON:
                 $callback = 'getRenderJSON';
                 break;
+            case self::AUTH:
+                $callback = 'getRoles';
+                break;
             default:
                 throw new \Exception('No handler for annotation type "' . $type . '"');
                 break;
@@ -258,6 +263,15 @@ class RouteParser
         }
 
         return (bool) $value->getValue() === false;
+    }
+
+    private static function getRoles(AnnotatedDefinition $definition, AnnotationElement $value = null)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        return explode(',', $value->getValue());
     }
 
     public static function getAnnotationIdentifier($type)
